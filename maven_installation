@@ -17,7 +17,7 @@ ls -l /etc/
 ls -l /etc/profile.d/
 ls -l /etc/profile.d/maven.sh        -----------------> created new maven.sh file in profile.d folder
 sudo vi /etc/profile.d/maven.sh      -----------------> adding two lines of code in vi editor for this file . That is 
-                                                        export M2_HOME=/opt.maven
+                                                        export M2_HOME=/opt/maven
                                                         export PATH=${M2_HOME}/bin:${PATH}
                                                         the above two lines are written inside the editor
                                                         
