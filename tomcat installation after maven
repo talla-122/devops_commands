@@ -1,0 +1,53 @@
+############ Tomcat installation ####################
+********* After successfull installtion of maven, we download and install tomcat **************
+
+sudo wget https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.84/bin/apache-tomcat-9.0.84.tar.gz -P /tmp/ -------------------> downloads tomcat
+ls -l /tmp/
+sudo tar xvzf /tmp/apache-tomcat-9.0.84.tar.gz -C /opt/ -----------------> extracting
+ls -l /opt/
+sudo mv /opt/apache-tomcat-9.0.84/ /opt/tomcat/ ---------------> renaming to tomcat
+cd maven-web-app/
+ls -l
+cd target/
+sudo readlink -f $(which java) -----------------> to get location of java where it is installed. It should be copy and pasted in tomcat.service file 
+sudo nano /etc/systemd/system/tomcat.service --------------> created tomcat.service file and following data should be dumped here:
+                                                                [Unit]
+                                                                Description=Apache Tomcat Web Application Container
+                                                                After=network.target
+                                                                
+                                                                [Service]
+                                                                Type=oneshot
+                                                                RemainAfterExit=yes
+                                                                
+                                                                User=tomcat
+                                                                Group=tomcat
+                                                                
+                                                                Environment="JAVA_HOME=/usr/lib/jvm/java-11-amazon-corretto.x86_64/" -----------> here we need to edit with the java location which we found above
+                                                                Environment="JAVA_OPTS=-Djava.security.egd=file:///dev/urandom -Djava.awt.headless=true"
+                                                                Environment="CATALINA_BASE=/opt/tomcat"
+                                                                Environment="CATALINA_HOME=/opt/tomcat/"
+                                                                Environment="CATALINA_PID=/opt/tomcat/temp/tomcat.pid"
+                                                                Environment="CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC"
+                                                                ExecStart=/opt/tomcat/bin/startup.sh
+                                                                ExecStop=/opt/tomcat/bin/shutdown.sh 
+                                                                
+                                                                [Install]
+                                                                WantedBy=multi-user.target
+
+sudo systemctl daemon-reload        ------------> to reload the system
+sudo systemctl enable tomcat
+sudo systemctl start tomcat
+sudo systemctl status tomcat
+sudo find /opt/tomcat/ -name "tomcat*user*"
+sudo vi /opt/tomcat/conf/tomcat-users.xml        ----------->   <role rolename="admin-gui"/>
+                                                                <role rolename="manager-gui"/>
+                                                                <user username="admin" password="admin" roles="admin-gui,manager-gui"/>
+
+sudo nano /opt/tomcat/webapps/manager/META-INF/context.xml        --------------> under value tag add |.* as shown below:
+                                                                                   <Valve className="org.apache.catalina.valves.RemoteAddrValve"
+                                                                                           allow="127\.\d+\.\d+\.\d+|::1|0:0:0:0:0:0:0:1|.*" />
+
+sudo nano /opt/tomcat/webapps/host-manager/META-INF/context.xml        --------------> under value tag add |.* as shown above
+sudo systemctl restart tomcat
+cd maven-web-app/
+sudo cp ./target/01-maven-web-app.war /opt/tomcat/webapps/          ---------------> If we copy .war file from target location to tomcat webapps, it will be deployed automatically
