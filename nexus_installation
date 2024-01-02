@@ -11,31 +11,46 @@ sudo wget https://download.sonatype.com/nexus/3/nexus-3.63.0-01-unix.tar.gz -P /
 ls -l /tmp/
 sudo tar xvzf /tmp/nexus-3.63.0-01-unix.tar.gz -C /opt/        ------------> extracts tar file and stores the nexus in opt folder
 sudo mv /opt/nexus-3.63.0-01-unix.tar.gz/ /opt/nexus        -------------> renaming was done to nexus for better readabilty
+sudo wget https://dlcdn.apache.org/maven/maven-3/3.9.6/binaries/apache-maven-3.9.6-bin.tar.gz -P /tmp/        -----------> copied link address from google------> downloads maven tar file in tmp folder
+ls -l /tmp/
+sudo tar xvzf /tmp/apache-maven-3.9.6-bin.tar.gz -C /opt/        ------------> extracts tar file and stores the maven in opt folder
+sudo mv /opt/apache-maven-3.9.6/ /opt/maven        -------------> renaming was done to maven for better readabilty
 ls -l /opt/
-ls -l /etc/
-ls -l /etc/profile.d/
-ls -l /etc/profile.d/maven.sh        -----------------> created new maven.sh file in profile.d folder
-sudo vi /etc/profile.d/maven.sh      -----------------> adding two lines of code in vi editor for this file . That is 
-                                                        export M2_HOME=/opt/maven
-                                                        export PATH=${M2_HOME}/bin:${PATH}
-                                                        the above two lines are written inside the editor
-                                                        
-ls -l /etc/profile.d/maven.sh
-sudo chmod +x /etc/profile.d/maven.sh        ---------------> to access maven from everywhere . Not only from opt/maven/
-ls -l /etc/profile.d/maven.sh
-sudo vi /etc/profile.d/maven.sh
-source /etc/profile.d/maven.sh
-mvn -version
-sudo rm -f /tmp/apache-maven-3.9.6-bin.tar.gz        -------------> once we successfully downloaded and installed and running maven , we don't require tar file of maven
+sudo useradd nexus -------------------> creates user
+sudo visudo
+      under root, add
+            nexus ALL = (ALL) NOPASSWD:  ALL
+sudo chown -R nexus:nexus /opt/nexus
+sudo chown -R nexus:nexus /opt/sonatype-work
+sudo chown -R 775 /opt/nexus
+sudo chown -R 775 /opt/sonatype-work
+sudo vi /opt/nexus/bin/nexus.rc
+      run_as_user="nexus"
+sudo vi /etc/systemd/system/nexus.service
+      [Unit]
+      Description=nexus service
+      After=network.target
 
-**************************************************maven installation completed****************************************************************************
+      [Service]
+      Type=forking
+      LimitNOFILE=65536
+      User=nexus
+      Group=nexus
+      ExecStart=/opt/nexus/bin/nexus start
+      ExecStop=/opt/nexus/bin/nexus stop
+      User=nexus
+      Restart=on-abort
 
-******test case******
-### cloning a remote repository and getting the .war or .jar file in the target folder which needs to be sent to webserver(tomcat server) in the future
-git -version
-sudo yum install git -y      
-git --version
-git clone https://github.com/talla-122/maven-web-app.git  
-cd maven-web-app/
-ls -l /target/
-mvn clean package        -------------------> this command will delete the previous .war or .jar files and target folder. And created new .war or .jar files and target folder in one go
+      [Install]
+      WantedBy=multi-user.target
+sudo systemctl enable nexus
+sudo systemctl start nexus
+sudo systemctl status nexus
+sudo cat /opt/nexus/etc/nexus-default.properties
+cat /opt/sonatype-work/nexus3/admin.password
+### now nexus will run, create repo in nexus, copy the repo link and give it to developers
+### developers should link this by editing in settings.xml file and pom.xml file. later devops engineer should run the below command to get the artifact which will be stored into nexus directly.
+
+mvn clean deploy
+
+## the above command will compile, test, package,install, deploy at a time
